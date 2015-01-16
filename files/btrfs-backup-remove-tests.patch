@@ -1,0 +1,12 @@
+diff --git a/setup.py b/setup.py
+index fcb543..cdb349 100644
+--- a/btrfs-backup/setup.py
++++ b/btrfs-backup/setup.py
+@@ -75,7 +75,6 @@ setup(
+   license = "GPLv3",
+   packages = [
+     "deso.btrfs",
+-    "deso.btrfs.test",
+   ],
+   package_dir = {
+     "deso.btrfs": join("src", "deso", "btrfs"),

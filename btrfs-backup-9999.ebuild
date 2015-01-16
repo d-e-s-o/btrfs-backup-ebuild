@@ -23,7 +23,7 @@ HOMEPAGE="https://github.com/d-e-s-o/btrfs-backup"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="arm amd64 amd64-linux x86 x86-linux"
-IUSE="+test"
+IUSE="+test tests"
 
 PYTHON_COMPAT=( python3_{2,3} )
 inherit python-r1
@@ -33,6 +33,13 @@ DEPEND="
   test? ( dev-python/mock[${PYTHON_USEDEP}] )
 "
 RDEPEND="${DEPEND}"
+# Note that due to the order of function invocation in ebuilds whenever the
+# 'test' USE flag is specified we also need 'tests' to be enabled. The reason
+# is that otherwise we remove the btrfs.test package and no tests are available
+# to execute.
+REQUIRED_USE="
+  test? ( tests )
+"
 
 EGIT_BRANCH="devel"
 EGIT_REPO_URI="https://github.com/d-e-s-o/btrfs-backup"
@@ -66,6 +73,10 @@ src_prepare() {
 
     einfo "Continuing in five seconds..."
     sleep 5
+  fi
+
+  if ! use tests; then
+    epatch "${FILESDIR}"/${PN}-remove-tests.patch
   fi
 }
 
