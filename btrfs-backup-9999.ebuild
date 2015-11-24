@@ -28,11 +28,15 @@ IUSE="+test tests"
 PYTHON_COMPAT=( python3_{2,3} )
 inherit python-r1
 
-DEPEND="
+RDEPEND="
+  dev-python/cleanup[${PYTHON_USEDEP}]
+  dev-python/execute[${PYTHON_USEDEP}]
+"
+DEPEND="${RDEPEND}
   dev-python/setuptools[${PYTHON_USEDEP}]
   test? ( dev-python/mock[${PYTHON_USEDEP}] )
 "
-RDEPEND="${DEPEND}"
+
 # Note that due to the order of function invocation in ebuilds whenever the
 # 'test' USE flag is specified we also need 'tests' to be enabled. The reason
 # is that otherwise we remove the btrfs.test package and no tests are available
