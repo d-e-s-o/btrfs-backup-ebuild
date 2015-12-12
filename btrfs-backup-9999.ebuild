@@ -84,6 +84,12 @@ src_prepare() {
   fi
 }
 
+python_install_all() {
+  distutils-r1_python_install_all
+
+  doinitd "${FILESDIR}"/init.d/btrfs-backup
+}
+
 # Note that python_test() is the default function that is invoked by
 # distutils-r1_src_test() which in turn is the default behavior of src_test()
 # which gets invoked when the 'test' portage feature is enabled.
