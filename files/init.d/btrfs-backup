@@ -20,6 +20,20 @@
 # $Header: Init script for automated running of btrfs-backup.$
 
 
+error() {
+  local exit_code=${?}
+  local function=${1}
+
+  eerror "$*"
+  # The user can provide a function, BTRFS_ERROR, which is then also invoked
+  # for every error.
+  if declare -F BTRFS_ERROR > /dev/null; then
+    BTRFS_ERROR "$*"
+  fi
+
+  return ${exit_code}
+}
+
 depend() {
   # TODO: The dependencies listed here are specific to the shutdown
   #       process. Perhaps the user wants to run the script at start up,
@@ -50,13 +64,17 @@ start() {
   if [ -z "${BTRFS_BACKUP_SRCREPO}" -o\
        -z "${BTRFS_BACKUP_DSTREPO}" -o\
        -z "${BTRFS_BACKUP_SUBVOLS}" ]; then
-    eerror "The following variables are required for ${RC_SVCNAME} to work: "
-    eerror "BTRFS_BACKUP_SRCREPO: The source repository, i.e., the directory "
-    eerror "                      where snapshots are stored."
-    eerror "BTRFS_BACKUP_DSTREPO: The destination repository."
-    eerror "BTRFS_BACKUP_SUBVOLS: A list of subvolumes to backup."
-    eerror ""
-    eerror "Please define them in ${conf}."
+    msg=$(cat <<EOF
+The following variables are required for ${RC_SVCNAME} to work:
+BTRFS_BACKUP_SRCREPO: The source repository, i.e., the directory
+                      where snapshots are stored.
+BTRFS_BACKUP_DSTREPO: The destination repository.
+BTRFS_BACKUP_SUBVOLS: A list of subvolumes to backup.
+
+Please define them in ${conf}.
+EOF
+)
+    error "${msg}"
     return 1
   fi
 
@@ -78,7 +96,7 @@ start() {
 
   if test -n "${mount}" && ! mountpoint --quiet "${mount}" &> /dev/null; then
     if ! mount "${mount}" &> /dev/null; then
-      eerror "Failed to mount ${mount}"
+      error "Failed to mount ${mount}"
       eend $?
       return 1
     fi
@@ -91,13 +109,13 @@ start() {
   # TODO: Need to iron out what btrfs-backup prints and what we want to
   #       appear here.
   if ! "${btrfs_backup}" ${args}; then
-    eerror "${btrfs_backup} failed"
+    error "${btrfs_backup} failed"
   fi
   result=$?
 
   if [ ${mounted} -ne 0 ]; then
     if ! umount "${mount}" &> /dev/null; then
-      eerror "Failed to unmount ${mount}"
+      error "Failed to unmount ${mount}"
     fi
   fi
   eend ${result}
