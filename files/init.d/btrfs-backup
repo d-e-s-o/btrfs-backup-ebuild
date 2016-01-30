@@ -51,6 +51,11 @@ depend() {
 }
 
 start() {
+  if yesno $RC_REBOOT; then
+    ewarn "Skipping btrfs backup due to reboot"
+    return 0
+  fi
+
   ebegin "Starting btrfs backup process"
 
   # We need to explicitly read in the conf.d configuration here. The
