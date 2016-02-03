@@ -35,15 +35,12 @@ error() {
 }
 
 depend() {
-  # TODO: The dependencies listed here are specific to the shutdown
-  #       process. Perhaps the user wants to run the script at start up,
-  #       then things would be screwed. Fix this.
-  # TODO: It appears that whenever a service is listed here but does not
-  #       exist in the run level the program will *not* start up at all.
-  #       This happened with 'savecache' which is not used on my system.
-  #       This is error prone and not very portable. Find a way to work
-  #       around this issue.
-  before killprocs mount-ro
+  # It is important to use 'need' rather than 'after' here as the latter
+  # does not impose a barrier during shutdown, meaning that while the
+  # backup is running localmount could be stopped which likely is fatal.
+  # Please use the RC_NEED variable for specifying additional
+  # dependencies in /etc/conf.d/${RC_SVCNAME}
+  need localmount
 
   # Backups can potentially take a long time. Disable the default
   # timeout that is imposed on standard init scripts.
@@ -51,6 +48,10 @@ depend() {
 }
 
 start() {
+  :
+}
+
+stop() {
   if yesno $RC_REBOOT; then
     ewarn "Skipping btrfs backup due to reboot"
     return 0
