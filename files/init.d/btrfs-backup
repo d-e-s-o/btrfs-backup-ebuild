@@ -114,10 +114,11 @@ EOF
 
   # TODO: Need to iron out what btrfs-backup prints and what we want to
   #       appear here.
-  if ! "${btrfs_backup}" ${args}; then
-    error "${btrfs_backup} failed"
-  fi
+  out=$(eval "${btrfs_backup} ${args}" 2>&1)
   result=$?
+  if [ ${result} -ne 0 ]; then
+    error "${out}"
+  fi
 
   if [ ${mounted} -ne 0 ]; then
     if ! umount "${mount}" &> /dev/null; then
