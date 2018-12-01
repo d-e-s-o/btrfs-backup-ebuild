@@ -34,6 +34,14 @@ error() {
   return ${exit_code}
 }
 
+unmount_() {
+  if [ ${2} -ne 0 ]; then
+    if ! umount "${1}" &> /dev/null; then
+      error "Failed to unmount ${1}"
+    fi
+  fi
+}
+
 depend() {
   # It is important to use 'need' rather than 'after' here as the latter
   # does not impose a barrier during shutdown, meaning that while the
@@ -72,6 +80,8 @@ stop() {
        -z "${BTRFS_BACKUP_SUBVOLS}" ]; then
     msg=$(cat <<EOF
 The following variables are required for ${RC_SVCNAME} to work:
+BTRFS_BACKUP_SRCMOUNT: The source volume to mount.
+BTRFS_BACKUP_DSTMOUNT: The destination volume to mount.
 BTRFS_BACKUP_SRCREPO: The source repository, i.e., the directory
                       where snapshots are stored.
 BTRFS_BACKUP_DSTREPO: The destination repository.
@@ -86,8 +96,10 @@ EOF
 
   # BTRFS_BACKUP_PROG is optional.
   local btrfs_backup=${BTRFS_BACKUP_PROG:-"/usr/bin/btrfs-backup"}
-  # BTRFS_BACKUP_MOUNT is optional.
-  local mount=${BTRFS_BACKUP_MOUNT:-""}
+  # BTRFS_BACKUP_SRCMOUNT is optional.
+  local srcmnt=${BTRFS_BACKUP_SRCMOUNT:-""}
+  # BTRFS_BACKUP_DSTMOUNT is optional.
+  local dstmnt=${BTRFS_BACKUP_DSTMOUNT:-""}
   # BTRFS_BACKUP_OPTS is optional.
   local options=${BTRFS_BACKUP_OPTS:-""}
   local src="${BTRFS_BACKUP_SRCREPO}"
@@ -100,17 +112,31 @@ EOF
     )
   local args="backup ${options} ${subvols} ${src} ${dst}"
 
-  if test -n "${mount}" && ! mountpoint --quiet "${mount}" &> /dev/null; then
-    if ! mount "${mount}" &> /dev/null; then
-      error "Failed to mount ${mount}"
+  if test -n "${srcmnt}" && ! mountpoint --quiet "${srcmnt}" &> /dev/null; then
+    if ! mount "${srcmnt}" &> /dev/null; then
+      error "Failed to mount ${srcmnt}"
       eend $?
       # We still want the script to succeed.
       return 0
     fi
 
-    mounted=1
+    srcmounted=1
   else
-    mounted=0
+    srcmounted=0
+  fi
+
+  if test -n "${dstmnt}" && ! mountpoint --quiet "${dstmnt}" &> /dev/null; then
+    if ! mount "${dstmnt}" &> /dev/null; then
+      error "Failed to mount ${dstmnt}"
+      eend $?
+      unmount_ "${srcmnt}" ${srcmounted}
+      # We still want the script to succeed.
+      return 0
+    fi
+
+    dstmounted=1
+  else
+    dstmounted=0
   fi
 
   # TODO: Need to iron out what btrfs-backup prints and what we want to
@@ -121,10 +147,7 @@ EOF
     error "${out}"
   fi
 
-  if [ ${mounted} -ne 0 ]; then
-    if ! umount "${mount}" &> /dev/null; then
-      error "Failed to unmount ${mount}"
-    fi
-  fi
+  unmount_ "${dstmnt}" ${dstmounted}
+  unmount_ "${srcmnt}" ${srcmounted}
   eend ${result}
 }
