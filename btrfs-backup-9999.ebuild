@@ -48,7 +48,7 @@ REQUIRED_USE="
 EGIT_BRANCH="devel"
 EGIT_REPO_URI="https://github.com/d-e-s-o/btrfs-backup"
 
-inherit git-2
+inherit git-r3
 inherit distutils-r1
 
 src_prepare() {
